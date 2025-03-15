@@ -1,0 +1,14 @@
+# Convex optimization
+cvxpy
+
+# Data
+numpy
+pandas
+matplotlib
+numba
+scipy
+mosek
+seaborn
+
+# Distributed computation
+mpi4py
