@@ -4,7 +4,7 @@ from time import time
 from datetime import datetime
 from scipy.linalg import cho_factor, cho_solve
 from numba import jit, prange
-from oars.matrices import getZfromGraph
+from oars.matrices.core import getZfromGraph
 from mosek.fusion import Model, Domain, Expr, ObjectiveSense, Matrix
 import json
 
