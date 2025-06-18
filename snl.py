@@ -707,7 +707,6 @@ class snl_node():
     def prox(self, X, tau=1, tol=None):
         """
         Proximal operator for the SNL node objective function
-        still need to implement tau
         """
         self.iteration += 1
         self.vectorize(X) # vectorize the input matrix X into xk
