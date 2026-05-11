@@ -22,7 +22,7 @@ def loadLogs(n, title= '_dist_log.json'):
     logs = []
     for node in range(2*n):
         logname = str(node)+title
-        with open(logname) as f:
+        with open('logs/'+logname) as f:
             data = json.load(f)
             logs.append(data)
     return logs
@@ -102,7 +102,7 @@ def getZfromNeighbors(Ni):
     Z = getZfromGraph(A)
     return Z
 
-def generateRandomData(n, m, d=2, rd=1, nf=0, cutoff=7, seed=0):
+def generateRandomData(n, m, d=2, rd=1, nf=0, cutoff=7, seed=0, rand=np.random.randn):
     """
     Generate randomize problem data for n points and m anchors inside [0, 1]^d
 
@@ -130,7 +130,16 @@ def generateRandomData(n, m, d=2, rd=1, nf=0, cutoff=7, seed=0):
     a = np.random.rand(m, d)
     x = np.random.rand(n, d)
 
+    da, Na = getAnchors(m, a, x, rd, nf, rand)    
+
+    dx, Ni = getNeighbors(x, rd, nf, cutoff, rand)
+    
+    aa = {(i, k): da[i, k] - np.linalg.norm(a[k])**2 for i in range(n) for k in Na[i]}
+    return a, x, da, dx, aa, Ni, Na
+
+def getAnchors(m, a, x, rd=1., nf=0., rand=np.random.randn):
     da = {}
+    n = len(x)
     
     # Na is a list with n empty lists
     Na = [[] for i in range(n)]
@@ -139,17 +148,12 @@ def generateRandomData(n, m, d=2, rd=1, nf=0, cutoff=7, seed=0):
         for k in range(m):
             dist = np.linalg.norm(x[i] - a[k])
             if dist < rd:
-                dval = (dist*(1+nf*np.random.randn()))**2
-                da[i, k] = dval
+                stretch = max(.05, 1+nf*rand())
+                da[i, k] = (dist*stretch)**2
                 Na[i].append(k)
+    return da, Na
 
-    dx, Ni = getNeighbors(x, rd, nf, cutoff)
-    
-    aa = {(i, k): da[i, k] - np.linalg.norm(a[k])**2 for i in range(n) for k in Na[i]}
-    return a, x, da, dx, aa, Ni, Na
-
-
-def getNeighbors(x, rd=1, nf=0, cutoff=7):
+def getNeighbors(x, rd=1, nf=0, cutoff=7, rand=np.random.randn):
     """
     Get the neighbors of each sensor within a radius rd
 
@@ -170,7 +174,8 @@ def getNeighbors(x, rd=1, nf=0, cutoff=7):
         for j in range(i+1, n):
             dist = np.linalg.norm(x[i] - x[j])
             if dist < rd:
-                perturbed_dist = (dist*(1+nf*np.random.randn()))**2
+                stretch = max(.05, 1+nf*rand())
+                perturbed_dist = (dist*stretch)**2
                 dx[i, j] = perturbed_dist
                 dx[j, i] = perturbed_dist
                 candidates[i].add(j)
@@ -218,7 +223,7 @@ def getSNLProxData(n, a, d, dx, aa, Ni, Na):
 
     return data, proxlist
 
-def solve_admm_double(a, n, dx, aa, Ni, Na, double=True, warmstartprimal=None, alpha=1.0, d=2, itrs=100, verbose=False):
+def solve_admm_double(a, n, dx, aa, Ni, Na, double=True, warmstartprimal=None, alpha=1.0, d=2, itrs=100, verbose=False, callback=None):
     """
     Solve the SNL problem using ADMM over the graph defined by Ni
     each node finds  :math:`X_i^{k+1} = \\argmin_{X_i}\\frac{\\alpha}{|N_i|} (\\sum_{j \\in N_i} |d_{ij} - x_{ii} - x_{jj} + 2x_{ij}| + \\sum_{k \\in N_a} |d_{ik} - x_{ii} + 2a_k x_{i}|) + 0.5||X_i - Z^k_i||_F^2`
@@ -290,6 +295,11 @@ def solve_admm_double(a, n, dx, aa, Ni, Na, double=True, warmstartprimal=None, a
             X[i+n] = cvx_nodes[i+n].prox(Z[i+n], tau=alpha/nsize[i])
 
 
+        # Logging
+        stop = time()
+        for i in range(2*n):
+            log_entry = (start, stop) + tuple(X[i][(i%n)+d, :d])
+            log[i].append(log_entry)
         # This can run in parallel
         # Find the average of the neighbors for each node
         # and update Z
@@ -298,11 +308,9 @@ def solve_admm_double(a, n, dx, aa, Ni, Na, double=True, warmstartprimal=None, a
         else:
             single_dual_update(Z, X, A, AX_old, n, neighborhoods, nsize)
         
-        # Logging
-        stop = time()
-        for i in range(2*n):
-            log_entry = (start, stop) + tuple(X[i][(i%n)+d, :d])
-            log[i].append(log_entry)
+            
+        if callback is not None and callback(itr=itr, x=X, y=Z):
+            break
     return np.mean(X, axis=0), log, X
 
 def node_objective_value(Z, dx, i, Ni, Na, d, a, aa):

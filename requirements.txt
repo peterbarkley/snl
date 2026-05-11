@@ -9,6 +9,7 @@ numba
 scipy
 mosek
 seaborn
+h5py
 
 # Distributed computation
 mpi4py
