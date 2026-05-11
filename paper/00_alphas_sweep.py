@@ -54,6 +54,7 @@ for s in range(numtests):
 
     # CVX
     X_cvx, cvx_val = solve_snl_fusion(a, n, aa, dx, Ni, Na)
+    # X_cvx, cvx_val = solve_snl_vec(a, n, aa, dx, Ni, Na) # CVXPY (slower, especially as size increases), but don't have to have MOSEK installed.
     cvx_dev = np.linalg.norm(X_cvx[d:, :d] - x, 'fro')
     # cvx_error = cvx_dev
     print(datetime.now(), s, np.round(cvx_dev,3))

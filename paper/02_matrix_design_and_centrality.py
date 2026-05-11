@@ -328,6 +328,7 @@ for s in range(numtests):
 
     # Mosek
     X_cvx, cvx_val = solve_snl_fusion(a, n, aa, dx, Ni, Na)
+    # X_cvx, cvx_val = solve_snl_vec(a, n, aa, dx, Ni, Na) # CVXPY (slower, especially as size increases)
     cvx_dev = np.sum((X_cvx[d:, :d] - x)**2)/n
     print(np.round(cvx_dev,3), end=' ')
     ip_centralities.append(getCentrality(X_cvx[d:, :d], center))

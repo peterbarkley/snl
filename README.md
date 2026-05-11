@@ -20,6 +20,8 @@ Then you can install the remainder of the project's dependencies by running the 
 pip install -r requirements.txt
 ```
 
+I used the MOSEK Fusion API for reference solutions - you can choose another solver instead by commenting out `solve_snl_fusion` and uncommenting `solve_snl_vec` in the python scripts.
+
 You will need to have latex installed in order to write the charts are they are given in the paper. Other you can just comment out the `plt.rcParams['text.usetex'] = True` line in each of the python scripts.
 
 If you want to run the size comparison, you will need mpi installed, and you will need to run the script on a node with at least 251 cores, or reduce the maximum size in the script.

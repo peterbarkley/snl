@@ -119,6 +119,7 @@ center = np.mean(a, axis=0)
 
 # CVX
 X_cvx, cvx_val = solve_snl_fusion(a, n, aa, dx, Ni, Na)
+# X_cvx, cvx_val = solve_snl_vec(a, n, aa, dx, Ni, Na) # CVXPY (slower, especially as size increases)
 cvx_X_val = X_cvx[d:, :d]
 
 # mpps setup

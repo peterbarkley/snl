@@ -17,7 +17,7 @@ plt.figure(figsize=(10, 10))  # Set figure size
 
 sns.kdeplot(data=df['MPPS_Mean_Deviation'], label='Early Termination', fill=True, color='blue', bw_adjust=bw_adjust)
 
-# Plot KDE for group 2
+# Plot KDE
 sns.kdeplot(data=df['IP_Mean_Deviation'], label='IP Relaxation Solution', fill=True, color='red', bw_adjust=bw_adjust)
 
 # Customize the plot
@@ -36,9 +36,9 @@ plt.figure(figsize=(10, 10))
 plt.hist([mpps_devs_i - cvx_devs_i for mpps_devs_i, cvx_devs_i in zip(df['MPPS_Deviation'], df['IP_Deviation'])], bins=np.arange(-0.16, 0.1, 0.02))
 plt.xlabel(r'$\|\hat{X} - X_0\| - \|\bar{X} - X_0\|$')
 plt.ylabel('Count')
-# vertical line at 0 in red
+
 plt.axvline(x=0, color='r', linestyle='--')
-# tight layout
+
 plt.tight_layout()
 plt.savefig('figs/fig_4_paired_diffs_early.pdf')
 plt.close()
@@ -59,4 +59,3 @@ for measure in [np.median, np.mean]:
         mpps_median_dev_uniform = measure(df[(df['nf'] == nf) & (df['rand'] == 'uniform')]['MPPS_Deviation'])
         print(f'{nf}\t{ip_median_dev_normal:.3f}\t{mpps_median_dev_normal:.3f}\t{ip_median_dev_uniform:.3f}\t{mpps_median_dev_uniform:.3f}')
 
-# Export previous output as a latex table

@@ -80,8 +80,9 @@ for nf in [.03, .05, .07]:
             xnorm = np.linalg.norm(x)
             # xnorms.append(xnorm)
 
-            # CVX
+            # Reference solution
             X_cvx, cvx_val = solve_snl_fusion(a, n, aa, dx, Ni, Na)
+            # X_cvx, cvx_val = solve_snl_vec(a, n, aa, dx, Ni, Na) # CVXPY (slower, especially as size increases)
             cvx_dev = np.linalg.norm(X_cvx[d:, :d] - x, 'fro')
             cvx_devs.append(cvx_dev)
             cvx_mean_dev = np.mean([np.linalg.norm(X_cvx[d+i, :d] - x[i]) for i in range(n)])

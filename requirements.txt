@@ -1,5 +1,6 @@
 # Convex optimization
 cvxpy
+mosek
 
 # Data
 numpy
