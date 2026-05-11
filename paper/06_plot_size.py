@@ -91,16 +91,7 @@ def load_all_experiments(filename, sizes, seeds, algorithms):
     
 
 # %%
-def print_all_paths(name):
-    print(name)
-
-with h5py.File("experiment_results.h5", 'r') as f:
-    print("All paths in the file:")
-    # visit() takes a callable (like a function) and applies it to every node
-    f.visit(print_all_paths)
-
-# %%
-filename = "exp_results.h5" #"experiment_results.h5"
+filename = "experiment_results.h5"
 sizes = [50, 100, 150, 200, 250]
 seeds = list(range(10))
 algorithms = ['mpps', 'admm']
