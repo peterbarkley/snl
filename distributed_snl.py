@@ -183,7 +183,7 @@ def worker(icomm):
         for i in [0, 1]:
             log = res[i].log
             idx = myrank + i*(n//2)
-            with open(str(idx) + '_dist_log.json', 'w') as f:
+            with open('logs/' + str(idx) + '_dist_log.json', 'w') as f:
                 json.dump(log, f)
 
 

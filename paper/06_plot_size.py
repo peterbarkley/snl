@@ -7,11 +7,8 @@ import seaborn as sns
 sns.set_theme()
 
 
-# Adds the parent directory to the search path
-
 from sys import path
 from pathlib import Path
-# Sets parent directory as a string path
 parent_dir = str(Path(__file__).resolve().parent.parent)
 path.append(parent_dir)
 
@@ -95,6 +92,7 @@ filename = "experiment_results.h5"
 sizes = [50, 100, 150, 200, 250]
 seeds = list(range(10))
 algorithms = ['mpps', 'admm']
+colors = {'mpps': 'blue', 'admm': 'red'}
 
 # Load everything into memory
 all_results, true_locs = load_all_experiments(filename, sizes, seeds, algorithms)
@@ -167,9 +165,9 @@ def plotAllReduced(all_results, sizes, colors = colors, measure=np.median, backg
 
 # %%
 fig = plotAllReduced(all_results, sizes, measure=np.mean, ylabel='Mean Squared Error', background=True, itrs=1500)
-plt.savefig('figs/06_size_comparison_grid_mean.pdf')
+plt.savefig('figs/size_comparison_grid_mean.pdf')
 plt.show()
 
 fig = plotAllReduced(all_results, sizes, measure=np.mean, ylabel='Mean Squared Error', xaxis='Time (s)', background=True, itrs=1500, title='Convergence over Time')
-plt.savefig('figs/06_size_comparison_grid_times_mean.pdf')
+plt.savefig('figs/size_comparison_grid_times_mean.pdf')
 plt.show()

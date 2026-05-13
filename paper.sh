@@ -29,5 +29,3 @@ echo "Running 06_size_comparison.py ... - this requires mpi and 251 cores. Pleas
 mpiexec -n 1 python -u paper/06_size_comparison.py >> paper_info.txt
 python -u paper/06_plot_size.py >> paper_info.txt
 
-
-echo "All tests completed successfully."
