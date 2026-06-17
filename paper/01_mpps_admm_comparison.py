@@ -56,16 +56,31 @@ def getWarmstart(x, sigmas=[0.01, 0.01]):
     n, d = x.shape
     return x + np.random.randn(n,d) * sigmas
 
-def solver(n, a, d, dx, aa, Ni, Na, x, Z, primal, alpha=1.0, gamma=0.5, itrs=1000, parallel=False):
+def solver(n, a, d, dx, aa, Ni, Na, x, Z, primal, parallel=False, **kwargs):
     data, proxlist = getSNLProxData(n, a, d, dx, aa, Ni, Na)
     if not parallel:
-        X, log, _, _ = solve(2*n, data, proxlist, Z=Z, W=Z, warmstartprimal=primal, alpha=alpha, gamma=gamma, itrs=itrs, verbose=False)
+        X, log, _, _ = solve(2*n, data, proxlist, Z=Z, W=Z, warmstartprimal=primal, verbose=False, **kwargs)
     else:
-        X, _ = distributed_block_sparse_solve(2*n, data, proxlist, Z=Z, warmstartprimal=primal, alpha=alpha, gamma=gamma, itrs=itrs, verbose=False, logging=True)
+        X, _ = distributed_block_sparse_solve(2*n, data, proxlist, Z=Z, warmstartprimal=primal, verbose=False, logging=True, **kwargs)
         log = loadLogs(n)
     return X, log
 
+class tol_cb():
+    def __init__(self, maxitr, n, d=2):
+        self.entries = (n + d)**2
+        self.maxitr = maxitr
 
+    def __call__(self, itr, x, y, **kwargs):
+        if itr == self.maxitr-1:
+            xbar = np.mean(x, axis=0)
+            xdiff = np.linalg.norm(x - xbar)
+            self.consensus_error = xdiff/(len(x) * self.entries)
+
+            g = x - y
+            sumg = np.sum(g, axis=0)
+            self.subdifferential_sum_norm = np.linalg.norm(sumg)/self.entries
+
+    
 # %%
 # '$||\\hat{X} - X||_F^2/n$'
 def compare_errors_single(loglist, lognames, itrs, error_ref=None, metric=np.median, ylabel='Median MSE', reflabel='Relaxation solution', bounds=True, boundslabel=' IQR'):
@@ -94,6 +109,14 @@ errors_mpps = []
 errors_admm = []
 errors_mpps_warm = []
 errors_admm_warm = []
+consensus_errors_mpps = []
+consensus_errors_mpps_warm = []
+subg_errors_mpps = []
+subg_errors_mpps_warm = []
+consensus_errors_admm = []
+consensus_errors_admm_warm = []
+subg_errors_admm = []
+subg_errors_admm_warm = []
 logs = defaultdict(list)
 rows = []
 
@@ -119,39 +142,52 @@ for s in range(numtests):
     Z = getZfromNeighbors(Ni)
 
     # mpps without warm start
-    X_mpps, cleanlog = solver(n, a, d, dx, aa, Ni, Na, x, Z, blankprimal, alpha=mpps_alpha, gamma=mpps_gamma, itrs=itrs, parallel=parallel)
+    cb = tol_cb(itrs, n*2, d)
+    X_mpps, cleanlog = solver(n, a, d, dx, aa, Ni, Na, x, Z, blankprimal, alpha=mpps_alpha, gamma=mpps_gamma, itrs=itrs, parallel=parallel, callback=cb)
     logs['Matrix Parametrized'].append(cleanlog)
     mpps_mse = np.sum((X_mpps[d:, :d] - x)**2)/n
     single_error = np.array([np.sum([((np.array(cleanlog[i+n][j][-d:]) + np.array(cleanlog[i][j][-d:]) )/2 - x[i])**2 for i in range(n)]) for j in range(len(cleanlog[0]))]) / n
     errors_mpps.append(single_error)
+    consensus_errors_mpps.append(cb.consensus_error)
+    subg_errors_mpps.append(cb.subdifferential_sum_norm)
     print(f'{mpps_mse:.3e}', end='   ')
 
     # mpps with warm start
-    Xw_mpps, cleanlog = solver(n, a, d, dx, aa, Ni, Na, x, Z, warmstartprimal, alpha=mpps_alpha, gamma=mpps_gamma, itrs=itrs, parallel=parallel)
+    cb = tol_cb(itrs, n*2, d)
+    Xw_mpps, cleanlog = solver(n, a, d, dx, aa, Ni, Na, x, Z, warmstartprimal, alpha=mpps_alpha, gamma=mpps_gamma, itrs=itrs, parallel=parallel, callback=cb)
     logs['Warm Matrix Parametrized'].append(cleanlog)
     warm_mpps_mse = np.sum((Xw_mpps[d:, :d] - x)**2)/n
     single_error = np.array([np.sum([((np.array(cleanlog[i+n][j][-d:]) + np.array(cleanlog[i][j][-d:]) )/2 - x[i])**2 for i in range(n)]) for j in range(len(cleanlog[0]))]) / n
     errors_mpps_warm.append(single_error)
+    consensus_errors_mpps_warm.append(cb.consensus_error)
+    subg_errors_mpps_warm.append(cb.subdifferential_sum_norm)
     print(f'{warm_mpps_mse:.3e}', end='   ')
 
     # ADMM
-    mean_X_admm, admm_log, all_X_admm = solve_admm_double(a, n, dx, aa, Ni, Na, warmstartprimal=blankprimal, alpha=admm_alpha, itrs=itrs)
+    cb = tol_cb(itrs, n*2, d)
+    mean_X_admm, admm_log, all_X_admm = solve_admm_double(a, n, dx, aa, Ni, Na, warmstartprimal=blankprimal, alpha=admm_alpha, itrs=itrs, callback=cb)
     logs['ADMM'].append(admm_log)
     admm_mse = np.sum((mean_X_admm[d:, :d] - x)**2)/n
     single_error = np.array([np.sum([((np.array(admm_log[i+n][j][-d:]) + np.array(admm_log[i][j][-d:]) )/2 - x[i])**2 for i in range(n)]) for j in range(len(cleanlog[0]))]) / n
     errors_admm.append(single_error)
+    consensus_errors_admm.append(cb.consensus_error)
+    subg_errors_admm.append(cb.subdifferential_sum_norm)
     print(f'{admm_mse:.3e}', end='   ')
 
     # ADMM with warm start
-    mean_X_admm, admm_log, all_X_admm = solve_admm_double(a, n, dx, aa, Ni, Na, warmstartprimal=admm_ws, alpha=admm_alpha, itrs=itrs)
+    cb = tol_cb(itrs, n*2, d)
+    mean_X_admm, admm_log, all_X_admm = solve_admm_double(a, n, dx, aa, Ni, Na, warmstartprimal=admm_ws, alpha=admm_alpha, itrs=itrs, callback=cb)
     logs['Warm ADMM'].append(admm_log)
     warm_admm_mse = np.sum((mean_X_admm[d:, :d] - x)**2)/n
     single_error = np.array([np.sum([((np.array(admm_log[i+n][j][-d:]) + np.array(admm_log[i][j][-d:]) )/2 - x[i])**2 for i in range(n)]) for j in range(len(cleanlog[0]))]) / n
     errors_admm_warm.append(single_error)
+    consensus_errors_admm_warm.append(cb.consensus_error)
+    subg_errors_admm_warm.append(cb.subdifferential_sum_norm)
     print(f'{warm_admm_mse:.3e}')
     rows.append([mpps_mse, warm_mpps_mse, admm_mse, warm_admm_mse])
 
-    
+print(f'Average consensus errors: MPPS - {np.mean(consensus_errors_mpps):.3e} ADMM - {np.mean(consensus_errors_admm):.3e} MPPS Warm - {np.mean(consensus_errors_mpps_warm):.3e} ADMM Warm - {np.mean(consensus_errors_admm_warm):.3e} ') 
+print(f'Average norm of the sum of the subgradients: MPPS - {np.mean(subg_errors_mpps):.3e} ADMM - {np.mean(subg_errors_admm):.3e} MPPS Warm - {np.mean(subg_errors_mpps_warm):.3e} ADMM Warm - {np.mean(subg_errors_admm_warm):.3e} ')   
 
 ref = np.median(cvx_mses)
 

@@ -3,6 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_theme()
+plt.rcParams['text.usetex'] = True
+plt.rcParams['font.family'] = "serif"
 import os
 
 dir_path = os.path.dirname(os.path.abspath(__file__))
@@ -12,8 +14,8 @@ file_path = os.path.join(dir_path, "term_output.csv")
 df = pd.read_csv(file_path)
 
 bw_adjust = 1.0
-
-plt.figure(figsize=(10, 10))  # Set figure size
+size = 5
+plt.figure(figsize=(size, size))  # Set figure size
 
 sns.kdeplot(data=df['MPPS_Mean_Deviation'], label='Early Termination', fill=True, color='blue', bw_adjust=bw_adjust)
 
@@ -32,7 +34,7 @@ plt.close()
 
 
 
-plt.figure(figsize=(10, 10))
+plt.figure(figsize=(size, size))
 plt.hist([mpps_devs_i - cvx_devs_i for mpps_devs_i, cvx_devs_i in zip(df['MPPS_Deviation'], df['IP_Deviation'])], bins=np.arange(-0.16, 0.1, 0.02))
 plt.xlabel(r'$\|\hat{X} - X_0\| - \|\bar{X} - X_0\|$')
 plt.ylabel('Count')

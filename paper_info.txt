@@ -1102,6 +1102,8 @@ date time s cvx_dev mpps_mse warm_mpps_mse admm_mse warm_admm_mse
 2026-05-11 18:59:38.847870 47 1.038e-03   1.027e-03   1.070e-03   1.241e-03   1.041e-03
 2026-05-11 19:00:02.737373 48 7.899e-04   7.556e-04   7.676e-04   1.059e-03   9.168e-04
 2026-05-11 19:00:26.286491 49 1.576e-03   1.385e-03   1.448e-03   1.445e-03   1.266e-03
+Average consensus errors: MPPS - 1.302e-06 ADMM - 6.235e-07 MPPS Warm - 7.444e-07 ADMM Warm - 5.093e-07 
+Average norm of the sum of the subgradients: MPPS - 2.525e-05 ADMM - 2.091e-03 MPPS Warm - 2.469e-05 ADMM Warm - 1.484e-03 
 Running 02_matrix_design_and_centrality.py...
 Matrix Design Test and Centrality Test
 date time test mosek sk con resist slem
