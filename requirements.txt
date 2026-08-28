@@ -1,6 +1,7 @@
 # Convex optimization
 cvxpy
 mosek
+oars
 
 # Data
 numpy
@@ -8,7 +9,6 @@ pandas
 matplotlib
 numba
 scipy
-mosek
 seaborn
 h5py
 

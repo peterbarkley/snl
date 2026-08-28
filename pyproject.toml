@@ -1,0 +1,21 @@
+[project]
+name = "snl"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "cvxpy>=1.9.2",
+    "h5py>=3.16.0",
+    "matplotlib>=3.11.1",
+    "mosek>=11.2.3",
+    "numba>=0.67.0",
+    "numpy>=2.5.2",
+    "oars",
+    "pandas>=3.0.5",
+    "scipy>=1.18.1",
+    "seaborn>=0.13.2",
+]
+
+[tool.uv.sources]
+oars = { path = "../oars", editable = true }

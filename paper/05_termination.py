@@ -50,8 +50,8 @@ class callback:
         self.Na = Na
 
 
-    def __call__(self, itr, x, v, **kwargs):
-        self.checkObjective(x, itr)
+    def __call__(self, itr, all_x, **kwargs):
+        self.checkObjective(all_x, itr)
         if self.objidx + self.window < itr:
             return True
 
@@ -69,24 +69,19 @@ s = 0
 oarsalpha = 10.0
 rand_uniform = partial(np.random.uniform, -1.0, 1.0)
 rand_uniform.__name__ = 'uniform'
-print('\t'.join(['date\t', 'time', 'nf', 'rand', 's', 'cvx_dev', 'mpps_dev', 'distributed_mpps_dev', 'itrs']))
+print('\t'.join(['date\t', 'time\t', 'nf', 'rand', 's', 'cvx_mse', 'mpps_mse', 'dist_mpps_mse', 'itrs']))
 for nf in [.03, .05, .07]:
     for rand in [np.random.randn, rand_uniform]:
         for i in range(numtests):
-            print(datetime.now(), nf, rand.__name__, s, end='\t')
-            a, x, da, dx, aa, Ni, Na = generateRandomData(n, m, d, rd=.7, nf=nf, seed=s, rand=rand) #n, m, d=2, rd=1, nf=0, cutoff=7, seed=0, rand=np.random.randn
-            # x_vals.append(x)
+            print(datetime.now(), nf, rand.__name__, s, sep='\t', end='\t')
+            a, x, da, dx, aa, Ni, Na = generateRandomData(n, m, d, rd=.7, nf=nf, seed=s, rand=rand) 
             center = np.mean(a, axis=0)
             xnorm = np.linalg.norm(x)
-            # xnorms.append(xnorm)
 
             # Reference solution
             X_cvx, cvx_val = solve_snl_fusion(a, n, aa, dx, Ni, Na)
-            # X_cvx, cvx_val = solve_snl_vec(a, n, aa, dx, Ni, Na) # CVXPY (slower, especially as size increases)
-            cvx_dev = np.linalg.norm(X_cvx[d:, :d] - x, 'fro')
-            cvx_devs.append(cvx_dev)
-            cvx_mean_dev = np.mean([np.linalg.norm(X_cvx[d+i, :d] - x[i]) for i in range(n)])
-            print(f'{cvx_dev:.3f}', end='\t')
+            cvx_mse = np.mean([np.linalg.norm(X_cvx[d+i, :d] - x[i])**2 for i in range(n)])
+            print(f'{cvx_mse:.3e}', end='\t')
 
             # OARS
             Z = getZfromNeighbors(Ni)
@@ -94,24 +89,21 @@ for nf in [.03, .05, .07]:
             primal = np.zeros((n+d, n+d))
             primal[:d, :d] = np.eye(d)
             cb = callback(n, d, dx, a, aa, Ni, Na)
-            X_oars, cleanlog, _, _ = solve(2*n, data, proxlist, W=Z, Z=Z, warmstartprimal=primal, alpha=oarsalpha, gamma=1.0, itrs=itrs, verbose=False, callback=cb)
-            mpps_dev = np.linalg.norm(X_oars[d:, :d] - x, 'fro')
-            mpps_devs.append(mpps_dev)
-            mpps_mean_dev = np.mean([np.linalg.norm(X_oars[i+d, :d] - x[i]) for i in range(n)])
-            itr_stop = len(cleanlog[0])
+            X_oars, cleanlog, _ = solve(2*n, data, proxlist, W=Z, Z=Z, warmstartprimal=primal, alpha=oarsalpha, gamma=1.0, itrs=itrs, verbose=False, callback=cb)
+            mpps_mse = np.mean([np.linalg.norm(X_oars[i+d, :d] - x[i])**2 for i in range(n)])
+            # itr_stop = len(cleanlog[0])
             for i in range(n):
-                X_oars_dist[i] = cleanlog[i+n][itr_stop-1][-d:]
-            mpps_dev_dist = np.linalg.norm(X_oars_dist - x, 'fro')
-            mpps_mean_dev_dist = np.mean([np.linalg.norm(X_oars_dist[i] - x[i]) for i in range(n)])
-            print(f'{mpps_dev:.3f} {mpps_dev_dist:.3f} {len(cleanlog[0])}')
-            data_dict[(nf, rand.__name__, s)] = (xnorm, cvx_dev, cvx_mean_dev, mpps_dev, mpps_mean_dev, mpps_dev_dist, mpps_mean_dev_dist)
+                X_oars_dist[i] = proxlist[i+n].log[-1][-d:]
+            mpps_mse_dist = np.mean([np.linalg.norm(X_oars_dist[i] - x[i])**2 for i in range(n)])
+            print(f'{mpps_mse:.3e}\t{mpps_mse_dist:.3e}\t{len(proxlist[0].log)}')
+            data_dict[(nf, rand.__name__, s)] = (xnorm, cvx_mse, mpps_mse, mpps_mse_dist)
             s += 1
 
 
 def write(filename, data_dict):
     with open(filename, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(['nf', 'rand', 's', 'xnorm', 'IP_Deviation', 'IP_Mean_Deviation', 'MPPS_Deviation', 'MPPS_Mean_Deviation', 'MPPS_Deviation_Dist', 'MPPS_Mean_Deviation_Dist'])
+        writer.writerow(['nf', 'rand', 's', 'xnorm', 'IP_MSE', 'MPPS_MSE', 'MPPS_MSE_Dist'])
         for s, values in data_dict.items():
             writer.writerow(list(s) + list(values))
 
@@ -127,10 +119,10 @@ write(file_path, data_dict)
 
 plt.figure(figsize=(10, 10))
 plt.hist([mpps_devs_i - cvx_devs_i for mpps_devs_i, cvx_devs_i in zip(mpps_devs, cvx_devs)], bins=np.arange(-0.16, 0.1, 0.02))
-plt.xlabel(r'$\|\hat{X} - X_0\| - \|\bar{X} - X_0\|$')
+plt.xlabel(r'$\frac{1}{n}\left(\|\hat{X} - X_0\|_F^2 - \|\bar{X} - X_0\|_F^2 \right)$')
 plt.ylabel('Count')
 # vertical line at 0 in red
 plt.axvline(x=0, color='r', linestyle='--')
 # tight layout
 plt.tight_layout()
-plt.savefig('figs/fig_4_paired_diffs_early.pdf')
+plt.savefig('figs/fig_4_paired_diffs_mean.pdf')

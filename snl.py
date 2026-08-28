@@ -617,7 +617,7 @@ class snl_node():
     """
     Prox class for the SNL node objective and top Z block identity constraint
     """
-    def __init__(self, shape, i, dx, a, aa, Ni, Na, d=2, rho=1.0, tol=1e-3, maxiter=100, multiplier=0.5, factor=1.01, logging=False, **kwargs):
+    def __init__(self, shape, i, dx, a, aa, Ni, Na, d=2, rho=1.0, tol=1e-3, maxiter=100, multiplier=1., factor=1.01, logging=False, **kwargs):
         self.approx = True
         self.d = d 
         self.shape = shape 
@@ -631,20 +631,20 @@ class snl_node():
         self.iteration = 0 # iteration counter
         self.a = a 
         self.multiplier = multiplier 
-        self.B = getB(self.a, self.Ni, self.Na, self.d, self.multiplier) # matrix B s.t. ||b-Bx||_1 = \\sum |b_i - X_ii - X_jj + 2X_ij| + \\sum|b_i - X_ii + 2a_k X_i|
+        self.K = getK(self.a, self.Ni, self.Na, self.d, self.multiplier) # matrix B s.t. ||b-Bx||_1 = \\sum |b_i - X_ii - X_jj + 2X_ij| + \\sum|b_i - X_ii + 2a_k X_i|
         self.rho = rho # ADMM prox parameter
-        self.rhoBT = self.rho*self.B.T # precomputed rho* B^T
+        self.rhoKT = self.rho*self.K.T # precomputed rho* B^T
         self.logging = logging
         if self.logging: self.log = []
 
-        # cholesky factorization of the matrix rho*(B^T B) + S^T S
-        self.cho_factor = cho_factor(getSTS(self.d, self.Ni) + self.rho*self.B.T@self.B)
-        self.n = self.B.shape[0] # number of rows in B (|Ni| + |Na|)
-        self.w = np.zeros(self.n) # dual variable for ADMM
-        self.x = np.zeros(self.B.shape[1]) # primal variable for ADMM, (x_ii, x_ij, x_jj, x_ij', x_j'j' ... x_i1, ..., x_id)
-        self.y = np.zeros(self.n) # primal variable for ADMM
-        self.b = np.zeros(self.n) # constant for ADMM s.t. absolute values can be written as ||b-Bx||_1
-        self.xk = np.zeros(self.B.shape[1]) # constant for ADMM with the same shape as x for storing input to the prox from other nodes
+        # cholesky factorization of the matrix rho*(K^T K) + S^T S
+        self.cho_factor = cho_factor(getSTS(self.d, self.Ni) + self.rho*self.K.T@self.K)
+        self.n = self.K.shape[0] # number of rows in B (|Ni| + |Na|)
+        self.w = np.zeros(self.n)
+        self.x = np.zeros(self.K.shape[1]) 
+        self.y = np.zeros(self.n) 
+        self.b = np.zeros(self.n) # constant s.t. absolute values can be written as ||b-Bx||_1
+        self.xk = np.zeros(self.K.shape[1]) # constant with the same shape as x for storing input to the prox from other nodes
         self.ii = (self.i + self.d, self.i + self.d) # diagonal index for the sensor
         self.Y = np.zeros(self.shape) # matrix for storing the output of the prox
         self.factor = factor #data.get('factor', 1.01) # factor for the tolerance decay
@@ -671,7 +671,6 @@ class snl_node():
         for k in self.Na:
             val += np.abs(self.aa[self.i,k] - X[self.ii] + 2*self.a[k]@X[self.i + self.d, :self.d])
 
-        # val = np.linalg.norm(self.bb - self.B@self.xk, 1)
         return val
 
     def getTol(self):
@@ -679,18 +678,20 @@ class snl_node():
 
     def admm(self, xk, tau, tol):
 
-        self.b = self.bb - self.B@xk
+        self.b = self.bb - self.K@xk
         
         # Main loop
-        for itr in range(self.maxiter):
-            self.x = admm_firststep(self.y, self.b, self.w, self.cho_factor, self.rhoBT)
-            self.y = admm_secondstep(self.b, self.B, self.x, self.w, tau, self.rho)
-            delta = self.b - self.y - self.B@self.x
+        oldy = np.zeros_like(self.b)
+        for _ in range(self.maxiter):
+            self.x = admm_firststep(self.y, self.b, self.w, self.cho_factor, self.rhoKT)
+            self.y = admm_secondstep(self.b, self.K, self.x, self.w, tau, self.rho)
+            delta = self.b - self.y - self.K@self.x
             self.w = self.w + delta
-            dd = np.linalg.norm(delta)
-            if dd < tol:
+            primal_residual = np.linalg.norm(delta)
+            dual_residual = np.linalg.norm(self.y - oldy)
+            if primal_residual < tol and dual_residual < tol:
                 break
-
+            oldy[:] = self.y
         return self.x
 
     def vectorize(self, X):
@@ -766,13 +767,13 @@ class snl_node_psd():
         self.estimate = self.Y[self.i + self.d, :self.d]
         return self.Y
 
-def getB(a, Ni, Na=None, d=2, multiplier=0.5):
+def getK(a, Ni, Na=None, d=2, multiplier=1.):
     '''
-    Return the matrix B for the SNL node objective function
-    B is a matrix of size (m, 1 + d + 2*len(Ni)) where m = len(Ni) + len(Na)
+    Return the matrix K for the SNL node objective function
+    K is a matrix of size (m, 1 + d + 2*len(Ni)) where m = len(Ni) + len(Na)
     for the SNL node objective function \\sum_{j \\in Ni} |d_{ij} - x_{ii} - x_{jj} + 2x_{ij}| + \\sum_{k \\in Na} |aa_{ik} - x_{ii} + 2a_k x_{i}|,
-    this will be equivalent to ||b - Bx||_1 where b is the vector of size m, b = (d_ij for j in Ni, aa_ik for k in Na)
-    the first column of B corresponds to x_ii, the next 2*len(Ni) columns correspond to x_{ij} and x_{jj} for j in Ni
+    this will be equivalent to ||b - Kx||_1 where b = (d_ij for j in Ni, aa_ik for k in Na) in R^m, 
+    the first column of K corresponds to x_ii, the next 2*len(Ni) columns correspond to x_{ij} and x_{jj} for j in Ni
     the last d columns correspond to x_{i} for k in Na
 
     Args:
@@ -783,21 +784,20 @@ def getB(a, Ni, Na=None, d=2, multiplier=0.5):
         multiplier (float): multiplier for the Ni block
 
     Returns:
-        array: matrix B
+        array: matrix K
     '''
     if Na is None:
         Na = list(range(len(a)))
     m = len(Na) + len(Ni)
 
-    B = np.zeros((m, 1 + 2*len(Ni) + d))
-    B[:len(Ni),0] = multiplier*np.ones(len(Ni))
-    B[len(Ni):,0] = np.ones(len(Na))
+    K = np.zeros((m, 1 + 2*len(Ni) + d))
+    K[:len(Ni),0] = multiplier*np.ones(len(Ni))
+    K[len(Ni):,0] = np.ones(len(Na))
     for i in range(len(Ni)):
-        B[i,2*i+1:2*i+3] = multiplier*np.array([-2, 1])
+        K[i,2*i+1:2*i+3] = multiplier*np.array([-2, 1])
     for i in range(len(Ni), len(Ni) + len(Na)):
         k = Na[i - len(Ni)]
-        # print(k, a[k, :], A[i,2*len(Ni)+1:2*len(Ni)+1+d])
-        B[i,2*len(Ni)+1:2*len(Ni)+1+d] = -2*a[k,:]
+        K[i,2*len(Ni)+1:2*len(Ni)+1+d] = -2*a[k,:]
 
-    return B
+    return K
  
