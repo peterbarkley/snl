@@ -59,7 +59,8 @@ def getWarmstart(x, sigmas=[0.01, 0.01]):
 def solver(n, a, d, dx, aa, Ni, Na, x, Z, primal, parallel=False, **kwargs):
     data, proxlist = getSNLProxData(n, a, d, dx, aa, Ni, Na)
     if not parallel:
-        X, log, _, _ = solve(2*n, data, proxlist, Z=Z, W=Z, warmstartprimal=primal, verbose=False, **kwargs)
+        X, _, _ = solve(2*n, data, proxlist, Z=Z, W=Z, warmstartprimal=primal, verbose=False, **kwargs)
+        log = [proxi.log for proxi in proxlist]
     else:
         X, _ = distributed_block_sparse_solve(2*n, data, proxlist, Z=Z, warmstartprimal=primal, verbose=False, logging=True, **kwargs)
         log = loadLogs(n)
@@ -70,13 +71,13 @@ class tol_cb():
         self.entries = (n + d)**2
         self.maxitr = maxitr
 
-    def __call__(self, itr, x, y, **kwargs):
+    def __call__(self, itr, all_x, all_y, **kwargs):
         if itr == self.maxitr-1:
-            xbar = np.mean(x, axis=0)
-            xdiff = np.linalg.norm(x - xbar)
-            self.consensus_error = xdiff/(len(x) * self.entries)
+            xbar = np.mean(all_x, axis=0)
+            xdiff = np.linalg.norm(all_x - xbar)
+            self.consensus_error = xdiff/(len(all_x) * self.entries)
 
-            g = x - y
+            g = all_x - all_y
             sumg = np.sum(g, axis=0)
             self.subdifferential_sum_norm = np.linalg.norm(sumg)/self.entries
 

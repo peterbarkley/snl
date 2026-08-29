@@ -3,25 +3,14 @@ import cvxpy as cp
 from sys import path
 # Sets parent directory as a string path
 path.append('/home/peter.barkley/code/snl-nrl/code')
-from snl import generateRandomData, solve_snl_fusion, getZfromNeighbors, getSNLProxData, solve_admm_double, getBlockIncidence
+from snl import generateRandomData, getZfromNeighbors, getBlockIncidence
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_theme()
-from datetime import datetime
-from collections import defaultdict
 plt.rcParams['text.usetex'] = True
 import os
 if not os.path.exists('figs'): os.makedirs('figs')
 
-# Change this to true if you want to use the MPI distributed version of the mpps algorithm
-parallel = False
-if parallel:
-    # requires mpi and mpi4py
-    from distributed_snl import distributed_block_sparse_solve
-    from snl import loadLogs
-else:
-    # requires the development branch of oars
-    from oars import solve
 
 print("Matrix design time")
 

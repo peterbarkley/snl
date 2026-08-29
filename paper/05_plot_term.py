@@ -35,7 +35,7 @@ plt.close()
 
 
 plt.figure(figsize=(size, size))
-plt.hist([mpps_devs_i - cvx_devs_i for mpps_devs_i, cvx_devs_i in zip(df['MPPS_MSE'], df['IP_MSE'])], bins=np.arange(-0.16, 0.1, 0.02))
+plt.hist([mpps_devs_i - cvx_devs_i for mpps_devs_i, cvx_devs_i in zip(df['MPPS_MSE'], df['IP_MSE'])], bins=np.arange(-0.004, 0.006, 0.001)) #
 plt.xlabel(r'$\frac{1}{n}\|\hat{X} - X_0\|^2_F - \frac{1}{n}\|\bar{X} - X_0\|^2_F$')
 plt.ylabel('Count')
 
@@ -59,5 +59,5 @@ for measure in [np.median, np.mean]:
         mpps_median_dev_normal = measure(df[(df['nf'] == nf) & (df['rand'] == np.random.randn.__name__)]['MPPS_MSE'])
         ip_median_dev_uniform = measure(df[(df['nf'] == nf) & (df['rand'] == 'uniform')]['IP_MSE'])
         mpps_median_dev_uniform = measure(df[(df['nf'] == nf) & (df['rand'] == 'uniform')]['MPPS_MSE'])
-        print(f'{nf} & \t{ip_median_dev_normal:.3e} & \t{mpps_median_dev_normal:.3e} & \t{ip_median_dev_uniform:.3e} &\t{mpps_median_dev_uniform:.3e}')
+        print(f'{nf} & \t\t{ip_median_dev_normal:.3e} & \t{mpps_median_dev_normal:.3e} & \t{ip_median_dev_uniform:.3e} &\t{mpps_median_dev_uniform:.3e}')
 

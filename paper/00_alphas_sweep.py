@@ -55,7 +55,7 @@ for s in range(numtests):
     # CVX
     X_cvx, cvx_val = solve_snl_fusion(a, n, aa, dx, Ni, Na)
     # X_cvx, cvx_val = solve_snl_vec(a, n, aa, dx, Ni, Na) # CVXPY (slower, especially as size increases), but don't have to have MOSEK installed.
-    cvx_dev = np.linalg.norm(X_cvx[d:, :d] - x, 'fro')
+    cvx_dev = (1/n)*np.linalg.norm(X_cvx[d:, :d] - x, 'fro')**2
     # cvx_error = cvx_dev
     print(datetime.now(), s, np.round(cvx_dev,3))
     cvx_vals.append(cvx_val)
@@ -74,11 +74,12 @@ for s in range(numtests):
             blankprimal[:d, :d] = np.eye(d)
             data, proxlist = getSNLProxData(n, a, d, dx, aa, Ni, Na) #n, a, d, dx, aa, Ni, Na
             if alg == 'MPPS':
-                alg_x, alg_log, _, _ = solve(2*n, data, proxlist, Z=Z, W=Z, warmstartprimal=blankprimal, alpha=alpha, gamma=gamma, itrs=itrs[alg], verbose=False)
+                alg_x, _, _ = solve(2*n, data, proxlist, Z=Z, W=Z, warmstartprimal=blankprimal, alpha=alpha, gamma=gamma, itrs=itrs[alg], verbose=False)
+                alg_log = [proxi.log for proxi in proxlist]
             else: 
                 alg_x, alg_log, _ = solve_admm_double(a, n, dx, aa, Ni, Na, warmstartprimal=blankprimal, alpha=alpha, itrs=itrs[alg])
         
-            single_error = np.array([np.sum([((np.array(alg_log[i+n][j][-d:]) + np.array(alg_log[i][j][-d:]) )/2 - x[i])**2 for i in range(n)])**0.5 for j in range(itrs[alg])])
+            single_error = np.array([np.mean([((np.array(alg_log[i+n][j][-d:]) + np.array(alg_log[i][j][-d:]) )/2 - x[i])**2 for i in range(n)]) for j in range(itrs[alg])])
             error_integral = np.sum(single_error)
             min_error = min(single_error)
             min_err_idx = np.argmin(single_error)

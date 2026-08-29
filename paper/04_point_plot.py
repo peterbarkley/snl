@@ -3,7 +3,7 @@ import cvxpy as cp
 from sys import path
 # Sets parent directory as a string path
 path.append('/home/peter.barkley/code/snl-nrl/code')
-from snl import generateRandomData, solve_snl_fusion, getZfromNeighbors, getSNLProxData, solve_admm_double, getBlockIncidence
+from snl import generateRandomData, solve_snl_fusion, getZfromNeighbors, getSNLProxData
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_theme()
@@ -100,8 +100,8 @@ class callback:
         self.Na = Na
 
 
-    def __call__(self, itr, x, v, **kwargs):
-        self.checkObjective(x, itr)
+    def __call__(self, itr, all_x, **kwargs):
+        self.checkObjective(all_x, itr)
         if self.objidx + self.window < itr:
             return True
 
@@ -133,11 +133,11 @@ Z = getZfromNeighbors(Ni)
 
 cb = callback(n, d, dx, a, aa, Ni, Na)
 data, proxlist = getSNLProxData(n, a, d, dx, aa, Ni, Na)
-X_mpps, cleanlog, _, _ = solve(2*n, data, proxlist, W=Z, Z=Z, warmstartprimal=primal, alpha=mpps_alpha, gamma=1.0, itrs=itrs, verbose=False, callback=cb)
+X_mpps, _, _ = solve(2*n, data, proxlist, W=Z, Z=Z, warmstartprimal=primal, alpha=mpps_alpha, gamma=1.0, itrs=itrs, verbose=False, callback=cb)
 
 xhat = np.zeros_like(x)
 for i in range(n):
-    xhat[i] = cleanlog[i+n][-1][-d:]
+    xhat[i] = proxlist[i+n].log[-1][-d:]
 fig = plotPoints(a, x, xhat=xhat, xbar=cvx_X_val, link=True)
 fig.savefig('figs/fig_3_point_plot_dist.pdf', bbox_inches='tight')
 plt.close()

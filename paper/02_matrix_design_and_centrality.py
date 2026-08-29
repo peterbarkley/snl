@@ -51,7 +51,8 @@ else:
 def solver(n, a, d, dx, aa, Ni, Na, x, Z, primal, alpha=1.0, gamma=0.5, itrs=1000, parallel=False):
     data, proxlist = getSNLProxData(n, a, d, dx, aa, Ni, Na)
     if not parallel:
-        X, log, _, _ = solve(2*n, data, proxlist, Z=Z, W=Z, warmstartprimal=primal, alpha=alpha, gamma=gamma, itrs=itrs, verbose=False)
+        X, _, _ = solve(2*n, data, proxlist, Z=Z, W=Z, warmstartprimal=primal, alpha=alpha, gamma=gamma, itrs=itrs, verbose=False)
+        log = [proxi.log for proxi in proxlist]
     else:
         X, _ = distributed_block_sparse_solve(2*n, data, proxlist, Z=Z, warmstartprimal=primal, alpha=alpha, gamma=gamma, itrs=itrs, verbose=False, logging=True)
         log = loadLogs(n)
@@ -310,6 +311,9 @@ def compare_errors_single(loglist, lognames, itrs, error_ref=None, metric=np.med
 
     return plt
 
+def get_error(cleanlog, n, d):
+    return np.array([np.sum([((np.array(cleanlog[i+n][j][-d:]) + np.array(cleanlog[i][j][-d:]) )/2 - x[i])**2 for i in range(n)]) for j in range(len(cleanlog[0]))]) / n
+
 errors_sk = []
 errors_con = []
 errors_resist = []
@@ -342,7 +346,7 @@ for s in range(numtests):
     # cleanlog = loadLogs(n)
     print(f'{mpps_err:.3f}', end=' ')
     # logs['Sinkhorn-Knopp'].append(cleanlog)
-    single_error = np.array([np.sum([((np.array(cleanlog[i+n][j][-d:]) + np.array(cleanlog[i][j][-d:]) )/2 - x[i])**2 for i in range(n)]) for j in range(len(cleanlog[0]))]) / n
+    single_error = get_error(cleanlog, n, d)
     errors_sk.append(single_error)
 
     # Center Warmstart
@@ -353,7 +357,7 @@ for s in range(numtests):
     primal[d:, d:] = centeredX @ centeredX.T
     X, cleanlog = solver(n, a, d, dx, aa, Ni, Na, x, Z, primal, alpha=mpps_alpha, gamma=mpps_gamma, itrs=itrs, parallel=parallel)
     logs['Centered'].append(cleanlog)
-    single_error = np.array([np.sum([((np.array(cleanlog[i+n][j][-d:]) + np.array(cleanlog[i][j][-d:]) )/2 - x[i])**2 for i in range(n)]) for j in range(len(cleanlog[0]))]) / n
+    single_error = get_error(cleanlog, n, d)
     errors_centered.append(single_error)
 
     # Max Connectivity
@@ -362,7 +366,7 @@ for s in range(numtests):
     mpps_dev = np.sum((X[d:, :d] - x)**2)/n
     print(np.round(mpps_dev,3), end=' ')
     logs['Max Connectivity'].append(cleanlog)
-    single_error = np.array([np.sum([((np.array(cleanlog[i+n][j][-d:]) + np.array(cleanlog[i][j][-d:]) )/2 - x[i])**2 for i in range(n)]) for j in range(len(cleanlog[0]))]) / n
+    single_error = get_error(cleanlog, n, d)
     errors_con.append(single_error)
 
     # Min Resist
@@ -373,7 +377,7 @@ for s in range(numtests):
     mpps_dev = np.sum((X[d:, :d] - x)**2)/n
     print(np.round(mpps_dev,3), end=' ')
     logs['Min Resistance'].append(cleanlog)
-    single_error = np.array([np.sum([((np.array(cleanlog[i+n][j][-d:]) + np.array(cleanlog[i][j][-d:]) )/2 - x[i])**2 for i in range(n)]) for j in range(len(cleanlog[0]))]) / n
+    single_error = get_error(cleanlog, n, d)
     errors_resist.append(single_error)
 
     # Min SLEM    
@@ -384,7 +388,7 @@ for s in range(numtests):
     mpps_dev = np.sum((X[d:, :d] - x)**2)/n
     print(np.round(mpps_dev,3))
     logs['Min SLEM'].append(cleanlog)
-    single_error = np.array([np.sum([((np.array(cleanlog[i+n][j][-d:]) + np.array(cleanlog[i][j][-d:]) )/2 - x[i])**2 for i in range(n)]) for j in range(len(cleanlog[0]))]) / n
+    single_error = get_error(cleanlog, n, d)
     errors_slem.append(single_error)
 
 
