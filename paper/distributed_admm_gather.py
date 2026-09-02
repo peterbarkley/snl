@@ -1,13 +1,7 @@
 import sys
-from sys import path
-from pathlib import Path
-# Sets parent directory as a string path
-parent_dir = str(Path(__file__).resolve().parent.parent)
-path.append(parent_dir)
 from mpi4py import MPI
 import numpy as np
 from time import time
-from datetime import datetime
 from snl import snl_node, snl_node_psd
 
 def solve_admm_dist(a, n, dx, aa, Ni, Na, warmstartprimal=None, alpha=1., itrs=1000, d=2, logging=True, verbose=False, check_termination=False):

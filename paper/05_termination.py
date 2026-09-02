@@ -1,11 +1,5 @@
 # %%
 import numpy as np
-from sys import path
-from pathlib import Path
-# Sets parent directory as a string path
-parent_dir = str(Path(__file__).resolve().parent.parent)
-path.append(parent_dir)
-# path.append('/home/peter.barkley/code/parallel_sdp/code')
 from snl import generateRandomData, solve_snl_fusion, getZfromNeighbors, getSNLProxData, node_objective_value
 from oars import solve
 import matplotlib.pyplot as plt
@@ -91,7 +85,6 @@ for nf in [.03, .05, .07]:
             cb = callback(n, d, dx, a, aa, Ni, Na)
             X_oars, cleanlog, _ = solve(2*n, data, proxlist, W=Z, Z=Z, warmstartprimal=primal, alpha=oarsalpha, gamma=1.0, itrs=itrs, verbose=False, callback=cb)
             mpps_mse = np.mean([np.linalg.norm(X_oars[i+d, :d] - x[i])**2 for i in range(n)])
-            # itr_stop = len(cleanlog[0])
             for i in range(n):
                 X_oars_dist[i] = proxlist[i+n].log[-1][-d:]
             mpps_mse_dist = np.mean([np.linalg.norm(X_oars_dist[i] - x[i])**2 for i in range(n)])
@@ -121,8 +114,6 @@ plt.figure(figsize=(10, 10))
 plt.hist([mpps_devs_i - cvx_devs_i for mpps_devs_i, cvx_devs_i in zip(mpps_devs, cvx_devs)], bins=np.arange(-0.16, 0.1, 0.02))
 plt.xlabel(r'$\frac{1}{n}\left(\|\hat{X} - X_0\|_F^2 - \|\bar{X} - X_0\|_F^2 \right)$')
 plt.ylabel('Count')
-# vertical line at 0 in red
 plt.axvline(x=0, color='r', linestyle='--')
-# tight layout
 plt.tight_layout()
 plt.savefig('figs/fig_4_paired_diffs_mean.pdf')

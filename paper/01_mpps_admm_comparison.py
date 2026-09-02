@@ -1,10 +1,6 @@
 # %%
 import numpy as np
-import cvxpy as cp
-from sys import path
-# Sets parent directory as a string path
-path.append('/home/peter.barkley/code/snl-nrl/code')
-from snl import generateRandomData, solve_snl_fusion, getZfromNeighbors, getSNLProxData, solve_admm_double, getBlockIncidence
+from snl import generateRandomData, solve_snl_fusion, getZfromNeighbors, getSNLProxData, solve_admm_double#, getBlockIncidence
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_theme()
@@ -84,7 +80,7 @@ class tol_cb():
     
 # %%
 # '$||\\hat{X} - X||_F^2/n$'
-def compare_errors_single(loglist, lognames, itrs, error_ref=None, metric=np.median, ylabel='Median MSE', reflabel='Relaxation solution', bounds=True, boundslabel=' IQR'):
+def compare_errors_single(loglist, lognames, itrs, error_ref=None, metric=np.median, ylabel='MSE', reflabel='Relaxation solution', bounds=True, boundslabel=' IQR'):
     
     for logs, name in zip(loglist, lognames):
         line, = plt.plot([metric([log_i[j] for log_i in logs]) for j in range(itrs)], label=name)

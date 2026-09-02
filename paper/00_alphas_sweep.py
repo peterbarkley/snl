@@ -1,12 +1,6 @@
 # %%
-# %%
 import numpy as np
-from sys import path
-from pathlib import Path
-# Sets parent directory as a string path
-parent_dir = str(Path(__file__).resolve().parent.parent)
-path.append(parent_dir)
-from snl import generateRandomData, solve_snl_fusion, getZfromNeighbors, getSNLProxData, loadLogs, solve_admm_double
+from snl import generateRandomData, solve_snl_fusion, getZfromNeighbors, getSNLProxData, solve_admm_double
 from oars import solve
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -26,7 +20,6 @@ d = 2
 numtests = 50
 
 # %%
-
 oarslogs = defaultdict(list)
 oars_devs = defaultdict(list)
 cvx_vals = []
@@ -56,7 +49,7 @@ for s in range(numtests):
     X_cvx, cvx_val = solve_snl_fusion(a, n, aa, dx, Ni, Na)
     # X_cvx, cvx_val = solve_snl_vec(a, n, aa, dx, Ni, Na) # CVXPY (slower, especially as size increases), but don't have to have MOSEK installed.
     cvx_dev = (1/n)*np.linalg.norm(X_cvx[d:, :d] - x, 'fro')**2
-    # cvx_error = cvx_dev
+    
     print(datetime.now(), s, np.round(cvx_dev,3))
     cvx_vals.append(cvx_val)
     cvx_devs.append(cvx_dev)

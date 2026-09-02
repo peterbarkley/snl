@@ -1,11 +1,5 @@
 # %%
 import numpy as np
-from sys import path
-from pathlib import Path
-# Sets parent directory as a string path
-parent_dir = str(Path(__file__).resolve().parent.parent)
-path.append(parent_dir)
-# path.append('/home/peter.barkley/code/parallel_sdp/code')
 from snl import generateRandomData, solve_snl_fusion, getZfromNeighbors, getSNLProxData, loadLogs
 from distributed_snl import distributed_block_sparse_solve
 import matplotlib.pyplot as plt
@@ -14,7 +8,6 @@ sns.set_theme()
 from collections import defaultdict
 from datetime import datetime
 plt.rcParams.update({'font.size': 6})
-from time import time
 from distributed_admm_gather import solve_admm_dist
 import h5py
 
@@ -32,7 +25,6 @@ def save_experiment_data(f, size, seed, algorithm, log, x, d):
     # Extract data from the list of lists
     for itr in range(1, num_iterations):    
         timestamps[itr-1] = log[-1][itr][0] - log[-1][1][0]
-        # print(timestamps)
         for i in range(num_functions):
             locations[itr-1, i, :] = (np.array(log[i][itr][-d:]) + np.array(log[i+n][itr][-d:]))/2
             

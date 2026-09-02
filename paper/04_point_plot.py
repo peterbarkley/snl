@@ -1,14 +1,8 @@
 import numpy as np
-import cvxpy as cp
-from sys import path
-# Sets parent directory as a string path
-path.append('/home/peter.barkley/code/snl-nrl/code')
 from snl import generateRandomData, solve_snl_fusion, getZfromNeighbors, getSNLProxData
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_theme()
-from datetime import datetime
-from collections import defaultdict
 plt.rcParams['text.usetex'] = True
 import os
 if not os.path.exists('figs'): os.makedirs('figs')

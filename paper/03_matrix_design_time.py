@@ -1,8 +1,5 @@
 import numpy as np
 import cvxpy as cp
-from sys import path
-# Sets parent directory as a string path
-path.append('/home/peter.barkley/code/snl-nrl/code')
 from snl import generateRandomData, getZfromNeighbors, getBlockIncidence
 import matplotlib.pyplot as plt
 import seaborn as sns

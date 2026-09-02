@@ -3,27 +3,17 @@
 # %%
 import cvxpy as cp
 import numpy as np
-from sys import path
-from pathlib import Path
-# Sets parent directory as a string path
-parent_dir = str(Path(__file__).resolve().parent.parent)
-path.append(parent_dir)
 from snl import getZfromNeighbors, getBlockIncidence, getSNLProxData, generateRandomData, solve_snl_fusion
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_theme()
 from collections import defaultdict
 from datetime import datetime
-# import matplotlib
 plt.rcParams['font.family'] = 'serif' 
 plt.rcParams['font.serif'] = ['Computer Modern']
 plt.rcParams['text.usetex'] = True
-# %%
 
-# %% [markdown]
-# ## Setup
 # %%
-
 numtests = 20
 n = 30
 m = 6
@@ -43,9 +33,7 @@ else:
     # requires the development branch of oars
     from oars import solve
 
-# %%
-# %% [markdown]
-# ## Functions
+
 # %%
 
 def solver(n, a, d, dx, aa, Ni, Na, x, Z, primal, alpha=1.0, gamma=0.5, itrs=1000, parallel=False):
@@ -154,7 +142,7 @@ ip_centralities = []
 actual_centralities = [] 
 
 def getCentrality(x, center):
-    return np.mean([np.linalg.norm(pt - center) for pt in x])
+    return np.mean([np.linalg.norm(pt - center)**2 for pt in x])
 
 def getMinResist_Fast(n, M, c=None, **kwargs):
     '''
@@ -343,9 +331,8 @@ for s in range(numtests):
     Z = getZfromNeighbors(Ni)
     X_mpps, cleanlog = solver(n, a, d, dx, aa, Ni, Na, x, Z, blankprimal, alpha=mpps_alpha, gamma=mpps_gamma, itrs=itrs, parallel=parallel)
     mpps_err = np.sum((X_mpps[d:, :d] - x)**2)/n
-    # cleanlog = loadLogs(n)
     print(f'{mpps_err:.3f}', end=' ')
-    # logs['Sinkhorn-Knopp'].append(cleanlog)
+    
     single_error = get_error(cleanlog, n, d)
     errors_sk.append(single_error)
 
@@ -365,7 +352,6 @@ for s in range(numtests):
     X, cleanlog = solver(n, a, d, dx, aa, Ni, Na, x, Zc, blankprimal, alpha=mpps_alpha, gamma=mpps_gamma, itrs=itrs, parallel=parallel)
     mpps_dev = np.sum((X[d:, :d] - x)**2)/n
     print(np.round(mpps_dev,3), end=' ')
-    logs['Max Connectivity'].append(cleanlog)
     single_error = get_error(cleanlog, n, d)
     errors_con.append(single_error)
 
@@ -376,7 +362,6 @@ for s in range(numtests):
     X, cleanlog = solver(n, a, d, dx, aa, Ni, Na, x, Zr, blankprimal, alpha=mpps_alpha, gamma=mpps_gamma, itrs=itrs, parallel=parallel)
     mpps_dev = np.sum((X[d:, :d] - x)**2)/n
     print(np.round(mpps_dev,3), end=' ')
-    logs['Min Resistance'].append(cleanlog)
     single_error = get_error(cleanlog, n, d)
     errors_resist.append(single_error)
 
@@ -387,7 +372,6 @@ for s in range(numtests):
     X, cleanlog = solver(n, a, d, dx, aa, Ni, Na, x, Zs, blankprimal, alpha=mpps_alpha, gamma=mpps_gamma, itrs=itrs, parallel=parallel)
     mpps_dev = np.sum((X[d:, :d] - x)**2)/n
     print(np.round(mpps_dev,3))
-    logs['Min SLEM'].append(cleanlog)
     single_error = get_error(cleanlog, n, d)
     errors_slem.append(single_error)
 
@@ -399,7 +383,7 @@ fig.savefig('figs/fig_2_sk_oars_error.pdf')
 plt.close()
 
 metric = np.mean
-plt.plot([metric([np.mean([np.linalg.norm(np.array(entry[j][-d:]) - center) for entry in log]) for log, center in zip(logs['Centered'], centers)]) for j in range(itrs)], label='Matrix Parametrized')
+plt.plot([metric([np.mean([np.linalg.norm(np.array(entry[j][-d:]) - center)**2 for entry in log]) for log, center in zip(logs['Centered'], centers)]) for j in range(itrs)], label='Matrix Parametrized')
 
 # Calculate CVX dev
 cvx_centrality_metric = metric(ip_centralities)
@@ -412,7 +396,7 @@ plt.axhline(y=cvx_centrality_metric, color='r', linestyle='--', label='Relaxatio
 plt.axhline(y=actual_centrality_metric, color='g', linestyle='--', label='Actual')
 
 plt.xlabel('Iteration')
-plt.ylabel('Mean distance to anchor center of mass')
+plt.ylabel('Mean squared distance from anchor center of mass')
 plt.legend()
 
 # save figure

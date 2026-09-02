@@ -1,18 +1,9 @@
 # %%
 import numpy as np
 import h5py
-
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_theme()
-
-
-from sys import path
-from pathlib import Path
-parent_dir = str(Path(__file__).resolve().parent.parent)
-path.append(parent_dir)
-
-from snl import generateRandomData
 
 # %%
 def load_and_compute_error(f, size, seed, algorithm):
@@ -39,9 +30,6 @@ def load_and_compute_error(f, size, seed, algorithm):
     # The result is a 1D array of length `num_iterations`
     single_error = np.sum(squared_errors, axis=(1,2)) / n
     
-    # Return a representative timestamp array (e.g., max time across functions per iteration)
-    # or just return the whole timestamps array depending on your plotting needs
-    # max_timestamps = np.max(timestamps, axis=0) 
     
     return single_error, infty_errors, itr_diff, times
 
@@ -65,13 +53,8 @@ def load_all_experiments(filename, sizes, seeds, algorithms):
             for algo in algorithms:
                 results[size][algo] = {}
                 for seed in seeds:
-                    # Check if this specific run exists in the file to avoid crash on missing data
                     base_path = f"size_{size}/seed_{seed}/{algo}"
                     if base_path in f:
-                        # We can use the previously defined function here. 
-                        # Note: if load_and_compute_error opens the file itself, 
-                        # you might want to adjust it to accept the open file object `f` instead of `filename` 
-                        # to avoid opening/closing the file dozens of times.
                         errors, inf_errors, itr_diff, times = load_and_compute_error(f, size, seed, algo)
                         
                         results[size][algo][seed] = {

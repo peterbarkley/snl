@@ -309,7 +309,7 @@ def solve_admm_double(a, n, dx, aa, Ni, Na, double=True, warmstartprimal=None, a
             single_dual_update(Z, X, A, AX_old, n, neighborhoods, nsize)
         
             
-        if callback is not None and callback(itr=itr, x=X, y=Z):
+        if callback is not None and callback(itr=itr, all_x=X, all_y=Z):
             break
     return np.mean(X, axis=0), log, X
 
@@ -674,7 +674,7 @@ class snl_node():
         return val
 
     def getTol(self):
-        return max(1/(self.iteration**self.factor), 1e-7)
+        return 1/(self.iteration**self.factor)
 
     def admm(self, xk, tau, tol):
 

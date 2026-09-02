@@ -1,10 +1,10 @@
 
 import sys
-from sys import path
-from pathlib import Path
+# from sys import path
+# from pathlib import Path
 # Sets parent directory as a string path
-parent_dir = str(Path(__file__).resolve().parent.parent)
-path.append(parent_dir)
+# parent_dir = str(Path(__file__).resolve().parent.parent)
+# path.append(parent_dir)
 import json
 from mpi4py import MPI
 import numpy as np
