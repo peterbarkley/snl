@@ -41,7 +41,7 @@ def solve_admm_dist(a, n, dx, aa, Ni, Na, warmstartprimal=None, alpha=1., itrs=1
     if ws:
         icomm.bcast(warmstartprimal, root=MPI.ROOT)
 
-    # Create neighborhoods - includes neighbors if they use 
+    # Create symmetrized neighborhoods
     neighborhoods = [set(Ni[i]) for i in range(n)]
     for i in range(n):
         for j in Ni[i]:
@@ -96,7 +96,6 @@ def worker(icomm):
     neighbor_list = list(neighborhood)
     dist_graph_comm = intracomm.Create_dist_graph_adjacent(neighbor_list, neighbor_list)
     recv_buff = np.empty((len(neighbor_list), *shape), dtype=np.float64)
-    neighbor_vals = {j:np.zeros(shape) for j in neighborhood}
     nsize = 1+2*len(neighborhood) # count includes other resolvent on sensor and both resolvents for each neighbor
     tau = alpha/nsize
 

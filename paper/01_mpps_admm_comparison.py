@@ -52,7 +52,7 @@ def getWarmstart(x, sigmas=[0.01, 0.01]):
     n, d = x.shape
     return x + np.random.randn(n,d) * sigmas
 
-def solver(n, a, d, dx, aa, Ni, Na, x, Z, primal, parallel=False, **kwargs):
+def solver(n, a, d, dx, aa, Ni, Na, Z, primal, parallel=False, **kwargs):
     data, proxlist = getSNLProxData(n, a, d, dx, aa, Ni, Na)
     if not parallel:
         X, _, _ = solve(2*n, data, proxlist, Z=Z, W=Z, warmstartprimal=primal, verbose=False, **kwargs)
@@ -140,7 +140,7 @@ for s in range(numtests):
 
     # mpps without warm start
     cb = tol_cb(itrs, n*2, d)
-    X_mpps, cleanlog = solver(n, a, d, dx, aa, Ni, Na, x, Z, blankprimal, alpha=mpps_alpha, gamma=mpps_gamma, itrs=itrs, parallel=parallel, callback=cb)
+    X_mpps, cleanlog = solver(n, a, d, dx, aa, Ni, Na, Z, blankprimal, alpha=mpps_alpha, gamma=mpps_gamma, itrs=itrs, parallel=parallel, callback=cb)
     logs['Matrix Parametrized'].append(cleanlog)
     mpps_mse = np.sum((X_mpps[d:, :d] - x)**2)/n
     single_error = np.array([np.sum([((np.array(cleanlog[i+n][j][-d:]) + np.array(cleanlog[i][j][-d:]) )/2 - x[i])**2 for i in range(n)]) for j in range(len(cleanlog[0]))]) / n
@@ -151,7 +151,7 @@ for s in range(numtests):
 
     # mpps with warm start
     cb = tol_cb(itrs, n*2, d)
-    Xw_mpps, cleanlog = solver(n, a, d, dx, aa, Ni, Na, x, Z, warmstartprimal, alpha=mpps_alpha, gamma=mpps_gamma, itrs=itrs, parallel=parallel, callback=cb)
+    Xw_mpps, cleanlog = solver(n, a, d, dx, aa, Ni, Na, Z, warmstartprimal, alpha=mpps_alpha, gamma=mpps_gamma, itrs=itrs, parallel=parallel, callback=cb)
     logs['Warm Matrix Parametrized'].append(cleanlog)
     warm_mpps_mse = np.sum((Xw_mpps[d:, :d] - x)**2)/n
     single_error = np.array([np.sum([((np.array(cleanlog[i+n][j][-d:]) + np.array(cleanlog[i][j][-d:]) )/2 - x[i])**2 for i in range(n)]) for j in range(len(cleanlog[0]))]) / n

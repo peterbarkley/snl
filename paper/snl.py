@@ -264,10 +264,13 @@ def solve_admm_double(a, n, dx, aa, Ni, Na, double=True, warmstartprimal=None, a
     X = Z.copy() # Initialize X, the variable for storing the resolvents
     A = Z.copy() # Initialize A, the variable for storing the average of the neighbors
     AX_old = X + A # Initialize A_old, the variable for storing the previous average of the neighbors
+
+    # Create symmetrized neighborhoods
     neighborhoods = [set(Ni[i]) for i in range(n)]
     for i in range(n):
         for j in Ni[i]:
             neighborhoods[j].add(i)
+
     if double:
         nsize = [1+2*len(neighborhoods[i]) for i in range(n)]
     else:
@@ -617,7 +620,7 @@ class snl_node():
     """
     Prox class for the SNL node objective and top Z block identity constraint
     """
-    def __init__(self, shape, i, dx, a, aa, Ni, Na, d=2, rho=1.0, tol=1e-3, maxiter=100, multiplier=1., factor=1.01, logging=False, **kwargs):
+    def __init__(self, shape, i, dx, a, aa, Ni, Na, d=2, rho=1.0, tol=None, maxiter=100, multiplier=1., factor=1.01, logging=False, **kwargs):
         self.approx = True
         self.d = d 
         self.shape = shape 
@@ -674,7 +677,7 @@ class snl_node():
         return val
 
     def getTol(self):
-        return 1/(self.iteration**self.factor)
+        return 1/( (self.iteration+1)**self.factor)
 
     def admm(self, xk, tau, tol):
 

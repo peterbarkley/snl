@@ -28,7 +28,7 @@ plt.ylabel('Density', fontsize=12)
 plt.legend()  # Add legend to distinguish groups
 
 # Show the plot
-plt.savefig('figs/fig_4_early_termination_density_mean.pdf', bbox_inches='tight')
+plt.savefig('figs/fig_6_early_termination_density_mean.pdf', bbox_inches='tight')
 plt.close()
 
 
@@ -42,7 +42,7 @@ plt.ylabel('Count')
 plt.axvline(x=0, color='r', linestyle='--')
 
 plt.tight_layout()
-plt.savefig('figs/fig_4_paired_diffs_mean.pdf')
+plt.savefig('figs/fig_6_paired_diffs_mean.pdf')
 plt.close()
 
 # Generate table with median performance for this noise factor and random function for MPPS and for IP
