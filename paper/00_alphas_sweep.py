@@ -40,7 +40,8 @@ sum_errors = defaultdict(list)
 errors = defaultdict(list)
 rows = []
 # %%
-# print(datetime.now(), 's', 'cvx', alphas)
+
+print(f'alpha min_err auc min_err_idx')
 for s in range(numtests):
     a, x, da, dx, aa, Ni, Na = generateRandomData(n, m, d, 0.7, .05, seed=s)
     x_vals.append(x)

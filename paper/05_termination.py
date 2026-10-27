@@ -107,13 +107,3 @@ dir_path = os.path.dirname(os.path.abspath(__file__))
 # Create the full path to the file
 file_path = os.path.join(dir_path, "term_output.csv")
 write(file_path, data_dict)
-
-
-
-plt.figure(figsize=(10, 10))
-plt.hist([mpps_devs_i - cvx_devs_i for mpps_devs_i, cvx_devs_i in zip(mpps_devs, cvx_devs)], bins=np.arange(-0.16, 0.1, 0.02))
-plt.xlabel(r'$\frac{1}{n}\left(\|\hat{X} - X_0\|_F^2 - \|\bar{X} - X_0\|_F^2 \right)$')
-plt.ylabel('Count')
-plt.axvline(x=0, color='r', linestyle='--')
-plt.tight_layout()
-plt.savefig('figs/fig_4_paired_diffs_mean.pdf')
