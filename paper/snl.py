@@ -677,7 +677,7 @@ class snl_node():
         return val
 
     def getTol(self):
-        return 1/( (self.iteration+1)**self.factor)
+        return (self.iteration+1)**(-self.factor)
 
     def admm(self, xk, tau, tol):
 
@@ -685,14 +685,14 @@ class snl_node():
         
         # Main loop
         oldy = np.zeros_like(self.b)
-        for _ in range(self.maxiter):
+        for itr in range(self.maxiter):
             self.x = admm_firststep(self.y, self.b, self.w, self.cho_factor, self.rhoKT)
             self.y = admm_secondstep(self.b, self.K, self.x, self.w, tau, self.rho)
             delta = self.b - self.y - self.K@self.x
             self.w = self.w + delta
             primal_residual = np.linalg.norm(delta)
             dual_residual = np.linalg.norm(self.y - oldy)
-            if primal_residual < tol and dual_residual < tol:
+            if primal_residual < tol and dual_residual < tol and itr > 0:
                 break
             oldy[:] = self.y
         return self.x
